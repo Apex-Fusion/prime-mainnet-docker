@@ -154,7 +154,7 @@ services:
     environment:
       - BLOCKFROST_CONFIG_SERVER_LISTEN_ADDRESS=0.0.0.0
       - PGPASSWORD_FILE=/run/secrets/postgres_password
-      - NODE_ENV=testnet
+      - NODE_ENV=mainnet
       - BLOCKFROST_CONFIG_SERVER_PORT=3000
       - BLOCKFROST_CONFIG_SERVER_DEBUG=true
       - BLOCKFROST_CONFIG_SERVER_PROMETHEUS_METRICS=false
@@ -162,7 +162,7 @@ services:
       - BLOCKFROST_CONFIG_DBSYNC_USER_FILE=/run/secrets/postgres_user
       - BLOCKFROST_CONFIG_DBSYNC_DATABASE_FILE=/run/secrets/postgres_db
       - BLOCKFROST_CONFIG_DBSYNC_MAX_CONN=10
-      - BLOCKFROST_CONFIG_NETWORK=testnet
+      - BLOCKFROST_CONFIG_NETWORK=mainnet
       - BLOCKFROST_CONFIG_TOKEN_REGISTRY_URL=https://tokens.cardano.org
     depends_on:
       db-sync:
