@@ -216,7 +216,7 @@ services:
       "
     environment:
       CMD: "cardano-wallet serve --node-socket /ipc/node.socket --database /wallet-db --listen-address 0.0.0.0"
-      NETWORK:
+      NETWORK: "mainnet"
     depends_on:
       prime-relay:
         condition: service_healthy
