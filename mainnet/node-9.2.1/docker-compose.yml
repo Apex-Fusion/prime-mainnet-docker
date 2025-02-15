@@ -198,21 +198,22 @@ services:
   #
   # requires: prime-relay
   wallet-api:
-    image: cardanofoundation/cardano-wallet:2023.12.18
+    image: cardanofoundation/cardano-wallet:2024.9.29
     volumes:
       - wallet-api-data:/wallet-db
       # use either docker volume (see volumes below) or local host folder if interracting from host over ipc
       # change here affects - db-sync, wallet-api, ogmios
       # - node-ipc:/ipc
       - ./node-ipc:/ipc
-      - ./config/node/genesis:/config/genesis
+      - ./config/wallet/configs:/configs
+      - ./config/wallet/config:/config
 
     ports:
       - 8290:8090
     entrypoint: []
     command: bash -c "
         ([[ $$NETWORK == \"mainnet\" ]] && $$CMD --mainnet) ||
-        ($$CMD --testnet /config/genesis/byron/genesis.json)
+        ($$CMD --testnet /configs/cardano/byron-genesis.json)
       "
     environment:
       CMD: "cardano-wallet serve --node-socket /ipc/node.socket --database /wallet-db --listen-address 0.0.0.0"

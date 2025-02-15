@@ -1,0 +1,122 @@
+{
+    "ByronGenesisFile": "byron-genesis.json",
+    "ByronGenesisHash": "6b91f3c3d68ebeaa8dede86ba371a56ae60547dec6a8713d1fca6e403caa4605",
+    "ShelleyGenesisFile": "shelley-genesis.json",
+    "ShelleyGenesisHash": "4fad52e08057e9cbfe71411719205c14c2e61e4dd4123541d0b6fa92971c89b0",
+    "AlonzoGenesisFile": "alonzo-genesis.json",
+    "AlonzoGenesisHash": "1cd94b66eade0670885744a858accdb2c3249e43e247db2c66b158050ec6a3e4",
+    "ConwayGenesisFile": "conway-genesis.json",
+    "ConwayGenesisHash": "01649daebfc1ae5646c6aab2bf07533cdf626fd49e270ac4258be7fe253c3cc1",
+    "SocketPath": "db/node.socket",
+    "PBftSignatureThreshold": 0.6,
+    "MaxConcurrencyBulkSync": 1,
+    "MaxConcurrencyDeadline": 2,
+    "Protocol": "Cardano",
+    "RequiresNetworkMagic": "RequiresNoMagic",
+    "LastKnownBlockVersion-Major": 7,
+    "LastKnownBlockVersion-Minor": 0,
+    "LastKnownBlockVersion-Alt": 0,
+    "MaxKnownMajorProtocolVersion": 7,
+    "TurnOnLogging": true,
+    "TurnOnLogMetrics": true,
+    "minSeverity": "Debug",
+    "TracingVerbosity": "NormalVerbosity",
+    "setupBackends": [
+      "KatipBK"
+    ],
+    "defaultBackends": [
+      "KatipBK"
+    ],
+    "hasEKG": 12788,
+    "hasPrometheus": [
+      "0.0.0.0",
+      12789
+    ],
+    "setupScribes": [
+      {
+        "scKind": "StdoutSK",
+        "scName": "stdout",
+        "scFormat": "ScText"
+      }
+    ],
+    "defaultScribes": [
+      [
+        "StdoutSK",
+        "stdout"
+      ]
+    ],
+    "rotation": {
+      "rpLogLimitBytes": 5000000,
+      "rpKeepFilesNum": 3,
+      "rpMaxAgeHours": 24
+    },
+    "TraceBlockFetchClient": true,
+    "TraceBlockFetchDecisions": true,
+    "TraceBlockFetchProtocol": true,
+    "TraceBlockFetchProtocolSerialised": true,
+    "TraceBlockFetchServer": true,
+    "TraceBlockchainTime": true,
+    "TraceChainDb": true,
+    "TraceChainSyncClient": true,
+    "TraceChainSyncBlockServer": true,
+    "TraceChainSyncHeaderServer": true,
+    "TraceChainSyncProtocol": true,
+    "TraceDNSResolver": true,
+    "TraceDNSSubscription": true,
+    "TraceErrorPolicy": true,
+    "TraceLocalErrorPolicy": true,
+    "TraceForge": true,
+    "TraceHandshake": true,
+    "TraceIpSubscription": true,
+    "TraceLocalRootPeers": true,
+    "TracePublicRootPeers": true,
+    "TracePeerSelection": true,
+    "TraceDebugPeerSelection": true,
+    "TracePeerSelectionActions": true,
+    "TraceConnectionManager": true,
+    "TraceServer": true,
+    "TraceLocalConnectionManager": true,
+    "TraceLocalServer": true,
+    "TraceLocalChainSyncProtocol": true,
+    "TraceLocalHandshake": true,
+    "TraceLocalTxSubmissionProtocol": true,
+    "TraceLocalTxSubmissionServer": true,
+    "TraceMempool": true,
+    "TraceMux": false,
+    "TraceTxInbound": true,
+    "TraceTxOutbound": true,
+    "TraceTxSubmissionProtocol": true,
+    "options": {
+      "mapBackends": {
+        "cardano.node.metrics": [
+          "EKGViewBK"
+        ],
+        "cardano.node.resources": [
+          "EKGViewBK"
+        ],
+        "cardano.node.metrics.connectedPeers": [
+          "EKGViewBK"
+        ],
+        "cardano.node.ChainDB.metrics": [
+          "EKGViewBK"
+        ],
+        "cardano.node.Forge.metrics": [
+          "EKGViewBK"
+        ]
+      },
+      "mapSeverity": {
+        "cardano.node.ChainDB": "Notice",
+        "cardano.node.DnsSubscription": "Debug"
+      }
+    },
+    "EnableP2P": true,
+    "TargetNumberOfRootPeers": 10,
+    "TargetNumberOfKnownPeers": 100,
+    "TargetNumberOfEstablishedPeers": 40,
+    "TargetNumberOfActivePeers": 20,
+    "TraceInboundGovernorCounters": true,
+    "TraceConnectionManagerTransitions": true,
+    "TraceLedgerPeers": true,
+    "TracePeerSelectionCounters": true,
+    "TracePeerStateActions": true
+  }
