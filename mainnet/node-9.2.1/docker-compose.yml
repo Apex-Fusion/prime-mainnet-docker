@@ -198,7 +198,7 @@ services:
   #
   # requires: prime-relay
   wallet-api:
-    image: cardanofoundation/cardano-wallet:2023.12.18
+    image: apexfusion/apex-wallet:2024.9.29
     volumes:
       - wallet-api-data:/wallet-db
       # use either docker volume (see volumes below) or local host folder if interracting from host over ipc
