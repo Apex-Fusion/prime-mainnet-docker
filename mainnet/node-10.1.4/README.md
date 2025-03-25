@@ -1,4 +1,4 @@
-# Apex prime public testnet relay and tooling
+# Apex prime public mainnet relay and tooling
 
 This docker compose file is starting following containers:
 
@@ -6,20 +6,23 @@ This docker compose file is starting following containers:
 * ogmios (requires prime-relay)
 * postgres (standalone, prerequisite for dbsync)
 * dbsync (requires prime-relay and postgres)
+* blockfrost (requires dbsync)
+* wallet-api (requires prime-relay)
+* icarus (requires wallet-api)
 
 The docker compose file is envisioned as example of available tooling and will start all of them in sequence.
 Feel free to exclude/modify listed services as per your requirements, following the dependency comments.
 
-For detals consult the docker compose file but at the time of writing, the followinge versions apply:
+For details consult the docker compose file but at the time of writing, the following versions apply:
 
 | Component   | Version      | Docker registry                      |
 |-------------|--------------|--------------------------------------|
-| prime-relay |        9.2.1 | ghcr.io/intersectmbo/cardano-node    |
-| ogmios      |       v6.8.0 | cardanosolutions/ogmios              |
+| prime-relay |      10.1.4  | ghcr.io/intersectmbo/cardano-node    |
+| ogmios      |     v6.10.0  | cardanosolutions/ogmios              |
 | postgres    | 14.10-alpine | postgres                             |
-| dbsync      |     13.5.0.2 | ghcr.io/intersectmbo/cardano-db-sync |
-| blockfrost  |     1.7.0    | blockfrost/backend-ryo               |
-| wallet-api  |  2023.12.18  | cardanofoundation/cardano-wallet     |
+| dbsync      |    13.6.0.4  | ghcr.io/intersectmbo/cardano-db-sync |
+| blockfrost  |      1.7.0   | blockfrost/backend-ryo               |
+| wallet-api  |   2024.9.29  | apexfusion/apex-wallet               |
 | icarus      |  2023-04-14  | piotrstachyra/icarus                 |
 
 
@@ -41,12 +44,12 @@ docker compose up -d
 
 ## Apex node relay
 
-This is a relay node connected to a running `prime-mainnet-921` network. All `cardano-cli` commands apply as usual. For example:
+This is a relay node connected to a running `prime-mainnet-1014` network. All `cardano-cli` commands apply as usual. For example:
 
 To check the tip (at the moment it is about 10 min to sync, will definitely vary over time):
 
 ```
-docker exec -it prime-mainnet-921-prime-relay-1 cardano-cli query tip --mainnet --socket-path /ipc/node.socket
+docker exec -it prime-mainnet-1014-prime-relay-1 cardano-cli query tip --mainnet --socket-path /ipc/node.socket
 ```
 
 
@@ -114,8 +117,8 @@ To remove containers and volumes, images will be left for fast restart:
 ```
 docker compose down
 docker volume rm \
-  prime-mainnet-921_db-sync-data \
-  prime-mainnet-921_node-db \
-  prime-mainnet-921_postgres \
-  prime-mainnet-921_wallet-api-data
+  prime-mainnet-1014_db-sync-data \
+  prime-mainnet-1014_node-db \
+  prime-mainnet-1014_postgres \
+  prime-mainnet-1014_wallet-api-data
 ```

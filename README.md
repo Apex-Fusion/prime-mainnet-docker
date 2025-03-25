@@ -18,7 +18,7 @@ For detals consult the docker compose file but at the time of writing, the follo
 
 | Network | Folder     | prime-relay | ogmios | db-sync  | postgres     | blockfrost |  wallet-api  |   icarus   |
 |---------|------------|-------------|--------|----------|--------------|------------|--------------|------------|
-| mainnet | node-9.2.1 |    9.2.1    | v6.8.0 | 13.5.0.2 | 14.10-alpine |    1.7.0   |  2023.12.18  | 2023-04-14 |
+| mainnet | node-10.1.4 |    10.1.4    | v6.10.0 | 13.6.0.4 | 14.10-alpine |    1.7.0   |  2024.9.29  | 2024-03-25 |
 
 
 Docker compose file is starting following containers:
