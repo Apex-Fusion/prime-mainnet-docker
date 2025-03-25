@@ -119,7 +119,7 @@ services:
       - RESTORE_RECREATE_DB=N
       - EXTRA_DB_SYNC_ARGS=--config /config_dbsync/config.json --socket-path /node-ipc/node.socket
     depends_on:
-    postgres:
+      postgres:
         condition: service_healthy
       prime-relay:
         condition: service_healthy
