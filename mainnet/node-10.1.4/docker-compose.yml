@@ -1,5 +1,5 @@
 version: "1"
-name: prime-mainnet-9.2.1
+name: prime-mainnet-10.1.4
 
 services:
   # ===========
@@ -7,8 +7,9 @@ services:
   # ===========
   #
   # standalone
+  # prerequsite for: ogmios, db-sync
   prime-relay:
-    image: ghcr.io/intersectmbo/cardano-node:9.2.1
+    image: ghcr.io/intersectmbo/cardano-node:10.1.4
     environment:
       - CARDANO_BLOCK_PRODUCER=false
       - CARDANO_CONFIG=/config/configuration.yaml
@@ -47,12 +48,13 @@ services:
   #
   # requires: prime-relay
   ogmios:
-    image: cardanosolutions/ogmios:v6.8.0
+    image: cardanosolutions/ogmios:v6.10.0
     restart: on-failure
     command: [
       "--host", "0.0.0.0",
       "--node-socket", "/ipc/node.socket",
-      "--node-config", "/config/configuration.yaml"
+      "--node-config", "/config/configuration.yaml",
+      "--log-level-websocket", "error"
     ]
     volumes:
       - ./config/node:/config
@@ -77,12 +79,14 @@ services:
       - POSTGRES_DB_FILE=/run/secrets/postgres_db
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
       - POSTGRES_USER_FILE=/run/secrets/postgres_user
+    ports:
+      - ${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}
+    command: ${POSTGRES_ARGS:--c maintenance_work_mem=1GB -c max_parallel_maintenance_workers=4} -p ${POSTGRES_PORT:-5432}
     secrets:
+      - postgres_db
       - postgres_password
       - postgres_user
-      - postgres_db
-    ports:
-      - ${POSTGRES_PORT:-5434}:5432
+    shm_size: '2gb'
     volumes:
       - postgres:/var/lib/postgresql/data
     restart: on-failure
@@ -93,7 +97,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    command: ${POSTGRES_ARGS:--c maintenance_work_mem=1GB -c max_parallel_maintenance_workers=4}
     logging:
       driver: "json-file"
       options:
@@ -106,11 +109,12 @@ services:
   #
   # requires: prime-relay and postgres
   db-sync:
-    image: ghcr.io/intersectmbo/cardano-db-sync:13.5.0.2
+    platform: linux/x86_64
+    image: ghcr.io/intersectmbo/cardano-db-sync:13.6.0.4
     environment:
       - DISABLE_LEDGER=${DISABLE_LEDGER:-}
       - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - RESTORE_SNAPSHOT=${RESTORE_SNAPSHOT:-}
       - RESTORE_RECREATE_DB=N
       - EXTRA_DB_SYNC_ARGS=--config /config_dbsync/config.json --socket-path /node-ipc/node.socket
@@ -130,13 +134,14 @@ services:
       - ./config/dbsync:/config_dbsync
       - ./config/node:/config
     entrypoint: [
-      "/nix/store/mvypj83y9x59s3hcgd2ybnpwimpbh1nl-entrypoint/bin/entrypoint",
+      "/nix/store/j03gg62bfw29fbm8f6j1lndvbkmkz46f-entrypoint/bin/entrypoint",
       "--config",
       "/config_dbsync/config.json",
       "--socket-path",
       "/node-ipc/node.socket"
-     ]
+    ]
     restart: on-failure
+    stop_signal: SIGINT
     logging:
       driver: "json-file"
       options:
