@@ -2,7 +2,7 @@ name: prime-mainnet-10.1.4
 
 include:
   - docker-compose-core.yml
-  - docker-compose-rosetta.yml
+  # - docker-compose-rosetta.yml
 
 secrets:
   # prerequisite for: postgres, dbsync
