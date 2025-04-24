@@ -1,0 +1,253 @@
+services:
+  # ===========
+  # prime relay
+  # ===========
+  #
+  # standalone
+  # prerequsite for: ogmios, db-sync
+  prime-relay:
+    image: ghcr.io/intersectmbo/cardano-node:10.1.4
+    environment:
+      - CARDANO_BLOCK_PRODUCER=false
+      - CARDANO_CONFIG=/config/configuration.yaml
+      - CARDANO_TOPOLOGY=/config/topology.json
+      - CARDANO_DATABASE_PATH=/data/db
+      - CARDANO_SOCKET_PATH=/ipc/node.socket
+      - CARDANO_LOG_DIR=/data/node.log
+      - CARDANO_BIND_ADDR=0.0.0.0
+      - CARDANO_PORT=5521
+    command:
+      - run
+    volumes:
+      - ./config/node:/config
+      - node-db:/data/db
+      # use either docker volume (see volumes below) or local host folder if interracting from host over ipc
+      # change here affects - db-sync, ogmios
+      # - node-ipc:/ipc
+      - ./node-ipc:/ipc
+    restart: on-failure
+    healthcheck:
+      # Ping the EKG port to see if it responds.
+      # Assuming if EKG isn't up then the rest of cardano-node isn't either.
+      test: ["CMD-SHELL", "curl -f 127.0.0.1:12788 || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  # ======
+  # ogmios
+  # ======
+  #
+  # requires: prime-relay
+  ogmios:
+    image: cardanosolutions/ogmios:v6.10.0
+    restart: on-failure
+    command: [
+      "--host", "0.0.0.0",
+      "--node-socket", "/ipc/node.socket",
+      "--node-config", "/config/configuration.yaml",
+      "--log-level-websocket", "error"
+    ]
+    volumes:
+      - ./config/node:/config
+      # - node-ipc:/ipc  
+      - ./node-ipc:/ipc
+    ports:
+      - ${OGMIOS_PORT:-1337}:1337
+    depends_on:
+      prime-relay:
+        condition: service_healthy
+
+  # =================
+  # postgres database
+  # =================
+  #
+  # standalone
+  # prerequsite for: dbsync
+  postgres:
+    image: postgres:14.10-alpine
+    environment:
+      - POSTGRES_LOGGING=true
+      # - POSTGRES_DB_FILE=/run/secrets/postgres_db
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+    ports:
+      - ${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}
+    command: ${POSTGRES_ARGS:--c maintenance_work_mem=1GB -c max_parallel_maintenance_workers=4} -p ${POSTGRES_PORT:-5432}
+    secrets:
+      - postgres_db
+      - postgres_password
+      - postgres_user
+    shm_size: '2gb'
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./config/postgres:/docker-entrypoint-initdb.d
+    restart: on-failure
+    healthcheck:
+      # Use pg_isready to check postgres is running. Substitute different
+      # user `postgres` if you've setup differently to config/pgpass-mainnet
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  # =======
+  # db sync
+  # =======
+  #
+  # requires: prime-relay and postgres
+  db-sync:
+    platform: linux/x86_64
+    image: ghcr.io/intersectmbo/cardano-db-sync:13.6.0.4
+    environment:
+      - DISABLE_LEDGER=${DISABLE_LEDGER:-}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - RESTORE_SNAPSHOT=${RESTORE_SNAPSHOT:-}
+      - RESTORE_RECREATE_DB=N
+      - EXTRA_DB_SYNC_ARGS=--config /config_dbsync/config.json --socket-path /node-ipc/node.socket
+    depends_on:
+      postgres:
+        condition: service_healthy
+      prime-relay:
+        condition: service_healthy
+    secrets:
+      - postgres_password
+      - postgres_user
+      - postgres_db
+    volumes:
+      - db-sync-data:/var/lib/cexplorer
+      # - node-ipc:/node-ipc
+      - ./node-ipc:/node-ipc
+      - ./config/dbsync:/config_dbsync
+      - ./config/node:/config
+    entrypoint: [
+      "/nix/store/j03gg62bfw29fbm8f6j1lndvbkmkz46f-entrypoint/bin/entrypoint",
+      "--config",
+      "/config_dbsync/config.json",
+      "--socket-path",
+      "/node-ipc/node.socket"
+    ]
+    restart: on-failure
+    stop_signal: SIGINT
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+
+  # =======================
+  # blockfrost run your own
+  # =======================
+  #
+  # requires: postgres (consequently dbsync to update the data withing the database)
+  blockfrost:
+    image: blockfrost/backend-ryo:v1.7.0
+    environment:
+      - BLOCKFROST_CONFIG_SERVER_LISTEN_ADDRESS=0.0.0.0
+      - PGPASSWORD_FILE=/run/secrets/postgres_password
+      - NODE_ENV=mainnet
+      - BLOCKFROST_CONFIG_SERVER_PORT=3000
+      - BLOCKFROST_CONFIG_SERVER_DEBUG=true
+      - BLOCKFROST_CONFIG_SERVER_PROMETHEUS_METRICS=false
+      - BLOCKFROST_CONFIG_DBSYNC_HOST=postgres
+      - BLOCKFROST_CONFIG_DBSYNC_USER_FILE=/run/secrets/postgres_user
+      - BLOCKFROST_CONFIG_DBSYNC_DATABASE_FILE=/run/secrets/postgres_db
+      - BLOCKFROST_CONFIG_DBSYNC_MAX_CONN=10
+      - BLOCKFROST_CONFIG_NETWORK=mainnet
+      - BLOCKFROST_CONFIG_TOKEN_REGISTRY_URL=https://tokens.cardano.org
+    depends_on:
+      db-sync:
+        condition: service_started
+    entrypoint:
+      - '/nix/store/7q1b1bsmxi91zci6g8714rcljl620y7f-bash-5.2-p15/bin/bash'
+      - '-c'
+      - |
+        mkdir /app/config;
+        export PATH=$$PATH:/nix/store/f11ibsj5vmqcy8ihfa8mzvpfs4af7cw5-coreutils-9.1/bin;
+        export PGPASSWORD=$$(cat $$PGPASSWORD_FILE);
+        export BLOCKFROST_CONFIG_DBSYNC_USER=$$(cat $$BLOCKFROST_CONFIG_DBSYNC_USER_FILE);
+        export BLOCKFROST_CONFIG_DBSYNC_DATABASE=$$(cat $$BLOCKFROST_CONFIG_DBSYNC_DATABASE_FILE);
+        /nix/store/y52li35j2ldsh5ax4xzq8zdnr3hpb3rc-blockfrost-backend-ryo/bin/blockfrost-backend-ryo
+    ports:
+      - ${POSTGRES_PORT:-3033}:3000
+    secrets:
+      - postgres_password
+      - postgres_user
+      - postgres_db
+#    volumes:
+#      - ./config/blockfrost:/app/config
+    restart: on-failure
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  # ==========
+  # wallet api
+  # ==========
+  #
+  # requires: prime-relay
+  wallet-api:
+    image: apexfusion/apex-wallet:2024.9.29
+    volumes:
+      - wallet-api-data:/wallet-db
+      # use either docker volume (see volumes below) or local host folder if interracting from host over ipc
+      # change here affects - db-sync, wallet-api, ogmios
+      # - node-ipc:/ipc
+      - ./node-ipc:/ipc
+      - ./config/node/genesis:/config/genesis
+
+    ports:
+      - 8290:8090
+    entrypoint: []
+    command: bash -c "
+        ([[ $$NETWORK == \"mainnet\" ]] && $$CMD --mainnet) ||
+        ($$CMD --testnet /config/genesis/byron/genesis.json)
+      "
+    environment:
+      CMD: "cardano-wallet serve --node-socket /ipc/node.socket --database /wallet-db --listen-address 0.0.0.0"
+      NETWORK: "mainnet"
+    depends_on:
+      prime-relay:
+        condition: service_healthy
+    restart: on-failure
+    logging:
+      driver: "json-file"
+      options:
+        compress: "true"
+        max-file: "10"
+        max-size: "50m"
+
+  # ======
+  # icarus
+  # ======
+  #
+  # requires: wallet-api
+  icarus:
+    image: piotrstachyra/icarus:v2023-04-14
+    environment:
+      - ICARUS_PORT=4477
+      - ICARUS_BIND_ADDR=0.0.0.0
+    entrypoint: []
+    command: sh -c "
+        /bin/sed -i 's/8090/8290/g' app.rb && \
+        /bin/sed -i 's/8090/8290/g' views/discovery.erb && \
+        ruby app.rb"
+    network_mode: "host"
+    restart: on-failure
+    depends_on:
+      wallet-api:
+        condition: service_started

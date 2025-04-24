@@ -1,6 +1,6 @@
-# Apex prime public mainnet relay and tooling
+# Apex prime mainnet relay and core tooling
 
-This docker compose file is starting following containers:
+The `docker-compose-core.yml` file is starting following containers:
 
 * prime-relay (standalone, prerequisite for dbsync)
 * ogmios (requires prime-relay)
@@ -13,18 +13,26 @@ This docker compose file is starting following containers:
 The docker compose file is envisioned as example of available tooling and will start all of them in sequence.
 Feel free to exclude/modify listed services as per your requirements, following the dependency comments.
 
+The `docker-compose-rosetta.yml` file is starting the following containers:
+
+* rosetta-api (requires prime-relay)
+* yaci-indexer (requires prime-relay and postgres)
+* submit-api (requires prime-relay)
+
 For details consult the docker compose file but at the time of writing, the following versions apply:
 
-| Component   | Version      | Docker registry                      |
-|-------------|--------------|--------------------------------------|
-| prime-relay |      10.1.4  | ghcr.io/intersectmbo/cardano-node    |
-| ogmios      |     v6.10.0  | cardanosolutions/ogmios              |
-| postgres    | 14.10-alpine | postgres                             |
-| dbsync      |    13.6.0.4  | ghcr.io/intersectmbo/cardano-db-sync |
-| blockfrost  |      1.7.0   | blockfrost/backend-ryo               |
-| wallet-api  |   2024.9.29  | apexfusion/apex-wallet               |
-| icarus      |  2023-04-14  | piotrstachyra/icarus                 |
-
+| Component     | Version      | Docker registry                         |
+|---------------|--------------|-----------------------------------------|
+| prime-relay   |      10.1.4  | ghcr.io/intersectmbo/cardano-node       |
+| ogmios        |     v6.10.0  | cardanosolutions/ogmios                 |
+| postgres      | 14.10-alpine | postgres                                |
+| dbsync        |    13.6.0.4  | ghcr.io/intersectmbo/cardano-db-sync    |
+| blockfrost    |      1.7.0   | blockfrost/backend-ryo                  |
+| wallet-api    |   2024.9.29  | apexfusion/apex-wallet                  |
+| icarus        |  2023-04-14  | piotrstachyra/icarus                    |
+| rosetta-api   |       1.2.1  | apexfusion/apex-rosetta-java-api        |
+| yaci-indexer  |       1.2.1  | apexfusion/apex-rosetta-java-indexer    |
+| submit-api    |      10.1.4  | ghcr.io/intersectmbo/cardano-submit-api |
 
 ## Prerequisites:
 
@@ -34,6 +42,19 @@ For details consult the docker compose file but at the time of writing, the foll
 
 
 ## Start procedure
+
+> By default, the `docker-compose-rosetta.yaml` file is commented out.
+>In case you want to use it, first copy the `.env.example` to `.env`:
+>```sh
+>cp .env.example .env
+>```
+>Afterwards, un-comment the `docker-compose-rosetta.yaml` include in the main `docker-compose.yaml` file:
+>```
+>...
+>include:
+>  - docker-compose-core.yml
+>  - docker-compose-rosetta.yml
+>...
 
 Run:
 
@@ -106,9 +127,25 @@ http://localhost:4477/
 http://localhost:4477/network-info
 ```
 
-Note that if you are also running a vector testnet compose setup on the same machine you can connect icarus 
+Note that if you are also running a vector testnet compose setup on the same machine you can connect icarus
 from either prime or vector setup on either wallet-api by targetting the desired one. Default ports for them are
 8190 for prime testnet and 8090 for vector testnet.
+
+# Rosetta API
+
+The [Mesh (formerly Rosetta) API](https://docs.cdp.coinbase.com/mesh/docs/welcome) provides a standardized interface for interacting with blockchain networks. It includes the following components:
+
+Submit API: Handles transaction submissions to the blockchain.
+Yaci Indexer: Indexes blockchain data for efficient querying.
+API: Provides the Rosetta-compliant API interface.
+
+To check the Rosetta API, send a POST request to localhost port 8082, for example:
+
+```sh
+curl -X POST http://localhost:8082/network/status -H "Content-Type: application/json" -d '{"network_identifier": {"blockchain": "prime", "network": "mainnet"}}'
+```
+
+For more details about using Rosetta / Mesh API, refer to the [API Reference](https://docs.cdp.coinbase.com/mesh/docs/api-reference)
 
 ## Remove procedure
 
