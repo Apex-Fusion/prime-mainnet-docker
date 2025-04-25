@@ -44,17 +44,17 @@ For details consult the docker compose file but at the time of writing, the foll
 ## Start procedure
 
 > By default, the `docker-compose-rosetta.yaml` file is commented out.
->In case you want to use it, first copy the `.env.example` to `.env`:
->```sh
->cp .env.example .env
->```
->Afterwards, un-comment the `docker-compose-rosetta.yaml` include in the main `docker-compose.yaml` file:
->```
->...
->include:
->  - docker-compose-core.yml
->  - docker-compose-rosetta.yml
->...
+> In case you want to use it, first copy the `.env.example` to `.env`:
+> ```sh
+> cp .env.example .env
+> ```
+> Afterwards, un-comment the `docker-compose-rosetta.yaml` include in the main `docker-compose.yaml` file:
+> ```
+> ...
+> include:
+>   - docker-compose-core.yml
+>   - docker-compose-rosetta.yml
+> ...
 
 Run:
 

@@ -38,6 +38,22 @@ services:
       timeout: 10s
     restart: always
 
+    init-rosetta-db:
+      image: postgres:14.10-alpine
+      environment:
+        PGUSER: ${DB_USER}
+        PGPASSWORD: ${DB_SECRET}
+        PGDATABASE: postgres
+        PGHOST: postgres
+      entrypoint: >
+        bash -c "
+        psql -tc 'SELECT 1 FROM pg_database WHERE datname = \"rosetta\"' |
+        grep -q 1 || (psql -c 'CREATE DATABASE rosetta' && psql -c 'GRANT ALL PRIVILEGES ON DATABASE rosetta TO postgres')"
+      depends_on:
+        postgres:
+          condition: service_healthy
+      restart: "no"
+
   yaci-indexer:
     image: apexfusion/apex-rosetta-java-yaci-indexer:1.0
     environment:
