@@ -1,0 +1,8 @@
+# NODE_CONFIG_DIR points here, so the image file /app/config/mainnet.yaml is not loaded.
+# That file sets dbSync.ssl, and the key alone turns SSL on. The compose Postgres has no SSL.
+# The other settings come from the BLOCKFROST_CONFIG_* env vars in docker-compose-core.yml.
+
+# Prime mainnet genesis in the blockfrost format (system start, max supply, Byron era).
+# Set the path here: in backend-ryo v4.0.0 the env var BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER
+# does not set the path, it only makes the app read this key.
+genesisDataFolder: /app/prime/genesis
