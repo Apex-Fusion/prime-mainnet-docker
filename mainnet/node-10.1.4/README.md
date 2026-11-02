@@ -27,7 +27,7 @@ For details consult the docker compose file but at the time of writing, the foll
 | ogmios        |     v6.10.0  | cardanosolutions/ogmios                 |
 | postgres      | 14.10-alpine | postgres                                |
 | dbsync        |    13.6.0.4  | ghcr.io/intersectmbo/cardano-db-sync    |
-| blockfrost    |      1.7.0   | blockfrost/backend-ryo                  |
+| blockfrost    |      4.0.0   | blockfrost/backend-ryo                  |
 | wallet-api    |   2024.9.29  | apexfusion/apex-wallet                  |
 | icarus        |  2023-04-14  | piotrstachyra/icarus                    |
 | rosetta-api   |       1.2.1  | apexfusion/apex-rosetta-java-api        |
@@ -106,6 +106,23 @@ To check the blockfrost point a browser to `localhost` port `3033`, for example:
 http://localhost:3033
 http://localhost:3033/epochs/latest
 ```
+
+### Prime configuration
+
+`config/blockfrost/` holds the Prime mainnet settings. Compose mounts it at `/app/prime`.
+
+* `start.sh` reads the database credentials from `secrets/dbsync/` and starts the backend.
+* `config/mainnet.yaml` is the config folder (`NODE_CONFIG_DIR`). It replaces the image file `/app/config/mainnet.yaml`, which turns on SSL for the database connection.
+* `genesis/` holds the Prime mainnet genesis in the Blockfrost format: system start 2024-05-13, max supply 3000000000000000, Byron era until epoch 2.
+* `sql/network.sql` and `sql/pools_pool_id.sql` use the Prime max supply instead of the Cardano value 45000000000000000. Compose mounts them over the files in the image. They correct `/network` (`supply.max`, `supply.total`) and `live_saturation` in `/pools/{pool_id}`.
+
+Use backend-ryo 4.0.0 with cardano-db-sync 13.6:
+
+* 2.0.0 and later need cardano-db-sync 13.2.0.1 or later. Version 1.7.0 fails on `/pools/{pool_id}/metadata`.
+* 4.1.0 and later need the `pg_cardano` Postgres extension for `/pools/{pool_id}`.
+* 6.7.1 and later need consumed-tx-out tracking in db-sync for `/addresses/{address}/total` and `/accounts/{stake_address}/addresses/total`.
+
+When you change the image tag, update the bash path in `entrypoint` and the nix store paths of the two SQL mounts. To find them, list the files of the image: `docker create --name tmp <image> && docker export tmp | tar -t | grep -E 'bin/bash$|dist/sql/(network/network|pools/pools_pool_id).sql$'; docker rm tmp`.
 
 ## Wallet API and Icarus
 

@@ -153,15 +153,17 @@ services:
   #
   # requires: postgres (consequently dbsync to update the data withing the database)
   blockfrost:
-    image: blockfrost/backend-ryo:v1.7.0
+    image: blockfrost/backend-ryo:v4.0.0
     environment:
       - BLOCKFROST_CONFIG_SERVER_LISTEN_ADDRESS=0.0.0.0
       - PGPASSWORD_FILE=/run/secrets/postgres_password
       - NODE_ENV=mainnet
+      - NODE_CONFIG_DIR=/app/prime/config
       - BLOCKFROST_CONFIG_SERVER_PORT=3000
       - BLOCKFROST_CONFIG_SERVER_DEBUG=true
       - BLOCKFROST_CONFIG_SERVER_PROMETHEUS_METRICS=false
       - BLOCKFROST_CONFIG_DBSYNC_HOST=postgres
+      - BLOCKFROST_CONFIG_DBSYNC_PORT=5432
       - BLOCKFROST_CONFIG_DBSYNC_USER_FILE=/run/secrets/postgres_user
       - BLOCKFROST_CONFIG_DBSYNC_DATABASE_FILE=/run/secrets/postgres_db
       - BLOCKFROST_CONFIG_DBSYNC_MAX_CONN=10
@@ -170,24 +172,24 @@ services:
     depends_on:
       db-sync:
         condition: service_started
+    # The image has no /bin/sh. start.sh reads the secrets and starts the backend.
+    # It runs with the bash of this image: change the path when you change the image tag.
     entrypoint:
       - '/nix/store/7q1b1bsmxi91zci6g8714rcljl620y7f-bash-5.2-p15/bin/bash'
-      - '-c'
-      - |
-        mkdir /app/config;
-        export PATH=$$PATH:/nix/store/f11ibsj5vmqcy8ihfa8mzvpfs4af7cw5-coreutils-9.1/bin;
-        export PGPASSWORD=$$(cat $$PGPASSWORD_FILE);
-        export BLOCKFROST_CONFIG_DBSYNC_USER=$$(cat $$BLOCKFROST_CONFIG_DBSYNC_USER_FILE);
-        export BLOCKFROST_CONFIG_DBSYNC_DATABASE=$$(cat $$BLOCKFROST_CONFIG_DBSYNC_DATABASE_FILE);
-        /nix/store/y52li35j2ldsh5ax4xzq8zdnr3hpb3rc-blockfrost-backend-ryo/bin/blockfrost-backend-ryo
+      - '/app/prime/start.sh'
     ports:
       - ${POSTGRES_PORT:-3033}:3000
     secrets:
       - postgres_password
       - postgres_user
       - postgres_db
-#    volumes:
-#      - ./config/blockfrost:/app/config
+    volumes:
+      # start.sh, config/ (NODE_CONFIG_DIR) and genesis/ (Prime mainnet genesis)
+      - ./config/blockfrost:/app/prime:ro
+      # Prime max supply 3000000000000000 instead of the Cardano value in the upstream SQL.
+      # The targets contain the nix store hash of backend-ryo v4.0.0: change them with the image tag.
+      - ./config/blockfrost/sql/network.sql:/nix/store/h38sgw1igfjf4g1zfnw3vm61knsld98x-blockfrost-backend-ryo/libexec/source/dist/sql/network/network.sql:ro
+      - ./config/blockfrost/sql/pools_pool_id.sql:/nix/store/h38sgw1igfjf4g1zfnw3vm61knsld98x-blockfrost-backend-ryo/libexec/source/dist/sql/pools/pools_pool_id.sql:ro
     restart: on-failure
     logging:
       driver: "json-file"
